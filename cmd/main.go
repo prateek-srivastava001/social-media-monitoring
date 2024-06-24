@@ -5,6 +5,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/prateek-srivastava001/social-media-monitoring/internal/routes"
 )
 
 func main() {
@@ -18,6 +19,7 @@ func main() {
 		})
 	})
 
+	routes.ScraperRoutes(app)
 	app.Logger.Fatal(app.Start(":8080"))
 
 }
