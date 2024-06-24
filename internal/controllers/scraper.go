@@ -15,7 +15,7 @@ func TwitterScraper(ctx echo.Context) error {
 	query := ctx.Param("query")
 	url := "https://x.com/i/api/graphql/TQmyZ_haUqANuyBcFBLkUw/SearchTimeline"
 	today := time.Now()
-	sinceDate := today.AddDate(0, 0, -5)
+	sinceDate := today.AddDate(0, 0, -1)
 
 	until := today.Format("2006-01-02")
 	since := sinceDate.Format("2006-01-02")
