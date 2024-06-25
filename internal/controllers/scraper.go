@@ -8,11 +8,13 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/jung-kurt/gofpdf"
 	"github.com/labstack/echo/v4"
 )
 
 func TwitterScraper(ctx echo.Context) error {
 	hateKeywords := []string{"Hindutva", "Cow vigilante", "Babri Masjid", "CAA NRC", "Bharat tere tukde honge", "Azaadi", "Azad Kashmir", "Khalistan", "Dalit", "Triple Talaq", "Saffron terror", "Jihadi", "Jihad", "Gazwa e Hind", "Godhra", "Hinduphobia", "Islamophobia", "Dictator", "Love Jihad", "Jai Bhim", "Sickular", "Cow Piss", "black lives matter", "Kafir", "anti national", "sanghi", "libtard", "woke", "rohingya", "genocide", "lynch", "kill", "tan se juda", "kashmir", "bhakt", "nazi", "fascist"}
+
 	var allResults []map[string]interface{}
 	for _, keyword := range hateKeywords {
 		results := searchTweets(keyword)
@@ -29,7 +31,12 @@ func TwitterScraper(ctx echo.Context) error {
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, hateSpeechTweets)
+	err := generatePDFReport(hateSpeechTweets)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	return ctx.JSON(http.StatusOK, map[string]string{"message": "PDF report generated successfully"})
 }
 
 func isHateSpeech(text string) bool {
@@ -64,6 +71,32 @@ func isHateSpeech(text string) bool {
 	}
 
 	return false
+}
+
+func generatePDFReport(tweets []map[string]interface{}) error {
+	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf.AddPage()
+	pdf.SetFont("Arial", "B", 16)
+	pdf.Cell(40, 10, "Hate Speech Tweets Report")
+	pdf.Ln(10)
+	pdf.SetFont("Arial", "", 12)
+	for i, tweet := range tweets {
+		pdf.SetFont("Arial", "B", 12)
+		pdf.Cell(0, 10, fmt.Sprintf("Tweet %d:", i+1))
+		pdf.Ln(8)
+		for key, value := range tweet {
+			pdf.SetFont("Arial", "B", 12)
+			pdf.CellFormat(40, 10, fmt.Sprintf("%s:", key), "", 0, "", false, 0, "")
+			pdf.SetFont("Arial", "", 12)
+			pdf.MultiCell(0, 10, fmt.Sprintf("%v", value), "", "", false)
+		}
+		pdf.Ln(10)
+	}
+	err := pdf.OutputFileAndClose("hate_speech_report.pdf")
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func searchTweets(keyword string) []map[string]interface{} {
