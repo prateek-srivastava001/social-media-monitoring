@@ -13,7 +13,7 @@ import (
 
 func TwitterScraper(ctx echo.Context) error {
 	hateKeywords := []string{"Hindutva", "Cow vigilante", "Babri Masjid", "CAA NRC", "Bharat tere tukde honge", "Azaadi", "Azad Kashmir", "Khalistan", "Dalit", "Triple Talaq", "Saffron terror", "Jihadi", "Jihad", "Gazwa e Hind", "Godhra", "Hinduphobia", "Islamophobia", "Dictator", "Love Jihad", "Jai Bhim", "Sickular", "Cow Piss", "black lives matter", "Kafir", "anti national", "sanghi", "libtard", "woke", "rohingya", "genocide", "lynch", "kill", "tan se juda", "kashmir", "bhakt", "nazi", "fascist"}
-		var allResults []map[string]interface{}
+	var allResults []map[string]interface{}
 	for _, keyword := range hateKeywords {
 		results := searchTweets(keyword)
 		if results != nil {
@@ -21,7 +21,49 @@ func TwitterScraper(ctx echo.Context) error {
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, allResults)
+	var hateSpeechTweets []map[string]interface{}
+	for _, tweet := range allResults {
+		text := tweet["full_text"].(string)
+		if isHateSpeech(text) {
+			hateSpeechTweets = append(hateSpeechTweets, tweet)
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, hateSpeechTweets)
+}
+
+func isHateSpeech(text string) bool {
+	payload := map[string]string{"text": text}
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		fmt.Println("Error marshalling payload:", err)
+		return false
+	}
+
+	resp, err := http.Post("http://localhost:8000/predict", "application/json", bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		fmt.Println("Error making prediction request:", err)
+		return false
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading prediction response body:", err)
+		return false
+	}
+
+	var prediction map[string]float64
+	if err := json.Unmarshal(body, &prediction); err != nil {
+		fmt.Println("Error parsing prediction response:", err)
+		return false
+	}
+
+	if probability, ok := prediction["hate_speech_probability"]; ok && probability > 0.70 {
+		return true
+	}
+
+	return false
 }
 
 func searchTweets(keyword string) []map[string]interface{} {
@@ -92,7 +134,6 @@ func searchTweets(keyword string) []map[string]interface{} {
 	}
 	defer resp.Body.Close()
 
-	// Processing the response
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("Error reading response body:", err)
