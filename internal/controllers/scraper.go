@@ -155,9 +155,9 @@ func searchTweets(keyword string) []map[string]interface{} {
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Host", "x.com")
-	req.Header.Set("Cookie", "auth_token=33636fa184dc3cc6519ca1d2d54c9f30a66d609f; ct0=6acd47438d54d800e85851c5b58c24dd5b402dfc58dbc3f5ca017b9c5a2d0085c07eba33d5742af1a54f8edf88b6c20d4b2fbaf5f73b803ddeb9cc25d87f2bcf829a52a1c97ce89a0bcb2fc3508823d4")
-	req.Header.Set("X-Csrf-Token", "6acd47438d54d800e85851c5b58c24dd5b402dfc58dbc3f5ca017b9c5a2d0085c07eba33d5742af1a54f8edf88b6c20d4b2fbaf5f73b803ddeb9cc25d87f2bcf829a52a1c97ce89a0bcb2fc3508823d4")
-	req.Header.Set("Authorization", "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA")
+	req.Header.Set("Cookie", "auth_token=<auth_token>; ct0=<x_csrf_token>")
+	req.Header.Set("X-Csrf-Token", "<x_csrf_token>")
+	req.Header.Set("Authorization", "Bearer <bearer_token>")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
