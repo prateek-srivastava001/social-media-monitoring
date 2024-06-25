@@ -12,7 +12,25 @@ import (
 )
 
 func TwitterScraper(ctx echo.Context) error {
-	query := ctx.Param("query")
+	hateKeywords := []string{"Hindutva", "Cow vigilante", "Babri Masjid", "CAA NRC", "Bharat tere tukde honge", "Azaadi", "Azad Kashmir", "Khalistan", "Dalit", "Triple Talaq", "Saffron terror", "Jihadi", "Jihad", "Gazwa e Hind", "Godhra", "Hinduphobia", "Islamophobia", "Dictator", "Love Jihad", "Jai Bhim", "Sickular", "Cow Piss", "black lives matter", "Kafir", "anti national", "sanghi", "libtard", "woke", "rohingya", "genocide", "lynch", "kill", "tan se juda", "kashmir", "bhakt", "nazi", "fascist"}
+		var allResults []map[string]interface{}
+	for _, keyword := range hateKeywords {
+		results := searchTweets(keyword)
+		if results != nil {
+			allResults = append(allResults, results...)
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, allResults)
+}
+
+func searchTweets(keyword string) []map[string]interface{} {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered from panic:", r)
+		}
+	}()
+
 	url := "https://x.com/i/api/graphql/TQmyZ_haUqANuyBcFBLkUw/SearchTimeline"
 	today := time.Now()
 	sinceDate := today.AddDate(0, 0, -1)
@@ -53,13 +71,13 @@ func TwitterScraper(ctx echo.Context) error {
             "longform_notetweets_inline_media_enabled": true,
             "responsive_web_enhance_cards_enabled": false
         }
-    }`, query, until, since)
+    }`, keyword, until, since)
 
 	req, err := http.NewRequest("GET", url, bytes.NewBuffer([]byte(payload)))
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
+		fmt.Println("Error creating request:", err)
+		return nil
 	}
-
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Host", "x.com")
 	req.Header.Set("Cookie", "auth_token=33636fa184dc3cc6519ca1d2d54c9f30a66d609f; ct0=6acd47438d54d800e85851c5b58c24dd5b402dfc58dbc3f5ca017b9c5a2d0085c07eba33d5742af1a54f8edf88b6c20d4b2fbaf5f73b803ddeb9cc25d87f2bcf829a52a1c97ce89a0bcb2fc3508823d4")
@@ -69,18 +87,22 @@ func TwitterScraper(ctx echo.Context) error {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
+		fmt.Println("Error making request:", err)
+		return nil
 	}
 	defer resp.Body.Close()
 
+	// Processing the response
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
+		fmt.Println("Error reading response body:", err)
+		return nil
 	}
 
 	var jsonResponse map[string]interface{}
 	if err := json.Unmarshal(body, &jsonResponse); err != nil {
-		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
+		fmt.Println("Error parsing JSON response:", err)
+		return nil
 	}
 
 	entries := jsonResponse["data"].(map[string]interface{})["search_by_raw_query"].(map[string]interface{})["search_timeline"].(map[string]interface{})["timeline"].(map[string]interface{})["instructions"].([]interface{})[0].(map[string]interface{})["entries"].([]interface{})
@@ -148,5 +170,5 @@ func TwitterScraper(ctx echo.Context) error {
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, results)
+	return results
 }
