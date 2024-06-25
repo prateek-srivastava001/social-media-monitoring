@@ -6,5 +6,5 @@ import (
 )
 
 func ScraperRoutes(incomingRoutes *echo.Echo) {
-	incomingRoutes.GET("/search", controllers.TwitterScraper)
+	incomingRoutes.GET("/generate", controllers.TwitterScraper)
 }
